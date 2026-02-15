@@ -1,6 +1,7 @@
 @page "/customers"
 @using EpsilonWebApp.Client.Services
 @using EpsilonWebApp.Shared.Models
+@using Microsoft.AspNetCore.Components.QuickGrid
 @inject ICustomerServiceClient CustomerService
 @attribute [Authorize]
 @rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
@@ -14,88 +15,77 @@
     </button>
 </div>
 
-@if (customers == null)
+@if (totalCount == -1)
 {
-    <p><em>Φόρτωση...</em></p>
-}
-else
-{
-    <div class="mb-2 text-muted">
-        Συνολικός αριθμός πελατών: <strong>@totalCount</strong>
+    <div class="text-center p-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Φόρτωση...</span>
+        </div>
+        <p class="text-muted mt-2">Φόρτωση δεδομένων...</p>
     </div>
-    <div class="table-responsive">
-        <table class="table table-striped table-hover">
-            <thead class="table-secondary">
-                <tr>
-                    <th @onclick='() => Sort("companyname")' style="cursor: pointer;">
-                        Επωνυμία Εταιρείας @GetSortIcon("companyname")
-                    </th>
-                    <th @onclick='() => Sort("contactname")' style="cursor: pointer;">
-                        Όνομα Επαφής @GetSortIcon("contactname")
-                    </th>
-                    <th @onclick='() => Sort("city")' style="cursor: pointer;">
-                        Πόλη @GetSortIcon("city")
-                    </th>
-                    <th @onclick='() => Sort("country")' style="cursor: pointer;">
-                        Χώρα @GetSortIcon("country")
-                    </th>
-                    <th @onclick='() => Sort("phone")' style="cursor: pointer;">
-                        Τηλέφωνο @GetSortIcon("phone")
-                    </th>
-                    <th class="text-center"></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var customer in customers)
-                {
-                    <tr>
-                        <td>@customer.CompanyName</td>
-                        <td>@customer.ContactName</td>
-                        <td>@customer.City</td>
-                        <td>@customer.Country</td>
-                        <td>@customer.Phone</td>
-                        <td class="text-center">
-                            <button class="btn btn-sm text-primary p-0 me-3 border-0 bg-transparent" @onclick="() => EditCustomer(customer)" title="Επεξεργασία">
-                                <i class="bi bi-pencil-square" style="font-size: 1.2rem;"></i>
-                            </button>
-                            <button class="btn btn-sm text-danger p-0 border-0 bg-transparent" @onclick="() => DeleteCustomer(customer.Id)" title="Διαγραφή">
-                                <i class="bi bi-trash3" style="font-size: 1.2rem;"></i>
-                            </button>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+}
+
+<div class="@(totalCount <= 0 ? "d-none" : "")">
+    <div class="grid-container">
+        <QuickGrid @ref="grid" ItemsProvider="@customerProvider" Pagination="@pagination" Class="table table-striped table-hover mt-3">
+            <PropertyColumn Property="@(c => c.CompanyName)" Title="Επωνυμία Εταιρείας" Sortable="true" />
+            <PropertyColumn Property="@(c => c.ContactName)" Title="Όνομα Επαφής" Sortable="true" />
+            <PropertyColumn Property="@(c => c.City)" Title="Πόλη" Sortable="true" />
+            <PropertyColumn Property="@(c => c.Country)" Title="Χώρα" Sortable="true" />
+            <PropertyColumn Property="@(c => c.Phone)" Title="Τηλέφωνο" Sortable="true" />
+            <TemplateColumn Title="" Class="text-center">
+                <button class="btn btn-sm text-primary p-0 me-3 border-0 bg-transparent" @onclick="() => EditCustomer(context)" title="Επεξεργασία">
+                    <i class="bi bi-pencil-square" style="font-size: 1.2rem;"></i>
+                </button>
+                <button class="btn btn-sm text-danger p-0 border-0 bg-transparent" @onclick="() => DeleteCustomer(context.Id)" title="Διαγραφή">
+                    <i class="bi bi-trash3" style="font-size: 1.2rem;"></i>
+                </button>
+            </TemplateColumn>
+        </QuickGrid>
     </div>
 
     <div class="d-flex justify-content-center mt-3">
         <nav aria-label="Page navigation">
             <ul class="pagination">
-                <li class="page-item @(currentPage == 1 ? "disabled" : "")">
-                    <button class="page-link" @onclick="() => ChangePage(1)" title="Πρώτη Σελίδα">
+                <li class="page-item @(pagination.CurrentPageIndex == 0 ? "disabled" : "")">
+                    <button class="page-link" @onclick="() => pagination.SetCurrentPageIndexAsync(0)" title="Πρώτη Σελίδα">
                         <i class="bi bi-chevron-double-left"></i>
                     </button>
                 </li>
-                <li class="page-item @(currentPage == 1 ? "disabled" : "")">
-                    <button class="page-link" @onclick="() => ChangePage(currentPage - 1)" title="Προηγούμενο">
+                <li class="page-item @(pagination.CurrentPageIndex == 0 ? "disabled" : "")">
+                    <button class="page-link" @onclick="() => pagination.SetCurrentPageIndexAsync(pagination.CurrentPageIndex - 1)" title="Προηγούμενο">
                         <i class="bi bi-chevron-left"></i>
                     </button>
                 </li>
                 <li class="page-item active">
-                    <span class="page-link">Σελίδα @currentPage από @totalPages</span>
+                    <span class="page-link">
+                        Σελίδα @(pagination.CurrentPageIndex + 1) από @(pagination.TotalItemCount.HasValue ? (int)Math.Ceiling((double)pagination.TotalItemCount.Value / pagination.ItemsPerPage) : 1)
+                    </span>
                 </li>
-                <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
-                    <button class="page-link" @onclick="() => ChangePage(currentPage + 1)" title="Επόμενο">
+                <li class="page-item @(pagination.CurrentPageIndex >= (pagination.TotalItemCount.HasValue ? (int)Math.Ceiling((double)pagination.TotalItemCount.Value / pagination.ItemsPerPage) - 1 : 0) ? "disabled" : "")">
+                    <button class="page-link" @onclick="() => pagination.SetCurrentPageIndexAsync(pagination.CurrentPageIndex + 1)" title="Επόμενο">
                         <i class="bi bi-chevron-right"></i>
                     </button>
                 </li>
-                <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
-                    <button class="page-link" @onclick="() => ChangePage(totalPages)" title="Τελευταία Σελίδα">
+                <li class="page-item @(pagination.CurrentPageIndex >= (pagination.TotalItemCount.HasValue ? (int)Math.Ceiling((double)pagination.TotalItemCount.Value / pagination.ItemsPerPage) - 1 : 0) ? "disabled" : "")">
+                    <button class="page-link" @onclick="() => pagination.SetCurrentPageIndexAsync((pagination.TotalItemCount.HasValue ? (int)Math.Ceiling((double)pagination.TotalItemCount.Value / pagination.ItemsPerPage) - 1 : 0))" title="Τελευταία Σελίδα">
                         <i class="bi bi-chevron-double-right"></i>
                     </button>
                 </li>
             </ul>
         </nav>
+    </div>
+</div>
+
+@if (totalCount == 0)
+{
+    <div class="text-center p-5 border rounded bg-light mt-4">
+        <i class="bi bi-people text-muted opacity-25" style="font-size: 4rem;"></i>
+        <h3 class="text-muted mt-3">Δεν βρέθηκαν εγγραφές πελατών</h3>
+        <p class="text-secondary mb-4">Η βάση δεδομένων σας είναι κενή.</p>
+        <button class="btn btn-primary btn-lg" @onclick="CreateNewCustomer">
+            <i class="bi bi-plus-lg me-2"></i>Προσθήκη πρώτου πελάτη
+        </button>
     </div>
 }
 
@@ -186,72 +176,65 @@ else
 }
 
 @code {
-    private List<Customer>? customers;
-    private int currentPage = 1;
-    private int pageSize = 10;
-    private int totalPages = 1;
-    private int totalCount = 0;
-    private string currentSortBy = "companyname";
-    private bool isDescending = false;
+    /// <summary>State for the grid's pagination.</summary>
+    private PaginationState pagination = new PaginationState { ItemsPerPage = 10 };
+    /// <summary>Provider logic for fetching grid items from the server.</summary>
+    private GridItemsProvider<Customer>? customerProvider;
+    /// <summary>Whether the create/edit modal is currently shown.</summary>
     private bool showModal = false;
+    /// <summary>Whether an address search is currently in progress.</summary>
     private bool isSearchingAddress = false;
+    /// <summary>List of address suggestions from OpenStreetMap.</summary>
     private List<OsmSearchResult> addressSuggestions = new();
+    /// <summary>Cancellation token for debouncing address search input.</summary>
     private System.Threading.CancellationTokenSource? debounceCts;
+    /// <summary>The customer currently being created or edited.</summary>
     private Customer editingCustomer = new();
+    /// <summary>Total number of customers found.</summary>
+    private int totalCount = -1; // -1 indicates loading or not yet checked
+    /// <summary>Reference to the QuickGrid component instance.</summary>
+    private QuickGrid<Customer>? grid;
 
-    protected override async Task OnInitializedAsync()
+    /// <summary>
+    /// Initializes the component and sets up the data provider for the grid.
+    /// </summary>
+    protected override void OnInitialized()
     {
-        await LoadCustomers();
+        customerProvider = async request =>
+        {
+            var sortBy = request.SortByColumn?.Title switch
+            {
+                "Επωνυμία Εταιρείας" => "companyname",
+                "Όνομα Επαφής" => "contactname",
+                "Πόλη" => "city",
+                "Χώρα" => "country",
+                "Τηλέφωνο" => "phone",
+                _ => "companyname"
+            };
+
+            var descending = request.SortByAscending ? false : true;
+            
+            // QuickGrid page index is 0-based, our API expects 1-based
+            var page = (pagination.CurrentPageIndex) + 1;
+            
+            var result = await CustomerService.GetCustomersAsync(
+                page, 
+                pagination.ItemsPerPage, 
+                sortBy, 
+                descending);
+
+            totalCount = result.TotalCount;
+            StateHasChanged();
+
+            return GridItemsProviderResult.From(
+                items: result.Items,
+                totalItemCount: result.TotalCount);
+        };
     }
 
-    private async Task LoadCustomers()
-    {
-        var result = await CustomerService.GetCustomersAsync(currentPage, pageSize, currentSortBy, isDescending);
-        customers = result.Items;
-        totalPages = result.TotalPages;
-        totalCount = result.TotalCount;
-        if (currentPage > totalPages && totalPages > 0)
-        {
-            currentPage = totalPages;
-            await LoadCustomers();
-        }
-    }
-
-    private async Task ChangePage(int newPage)
-    {
-        currentPage = newPage;
-        await LoadCustomers();
-    }
-
-    private async Task Sort(string column)
-    {
-        if (currentSortBy == column)
-        {
-            isDescending = !isDescending;
-        }
-        else
-        {
-            currentSortBy = column;
-            isDescending = false;
-        }
-        await LoadCustomers();
-    }
-
-    private RenderFragment GetSortIcon(string column) => builder =>
-    {
-        if (currentSortBy != column)
-        {
-            builder.OpenElement(0, "i");
-            builder.AddAttribute(1, "class", "bi bi-arrow-down-up ms-1 text-muted opacity-50");
-            builder.CloseElement();
-            return;
-        }
-
-        builder.OpenElement(0, "i");
-        builder.AddAttribute(1, "class", isDescending ? "bi bi-sort-down ms-1 text-primary" : "bi bi-sort-up ms-1 text-primary");
-        builder.CloseElement();
-    };
-
+    /// <summary>
+    /// Prepares the modal for creating a new customer.
+    /// </summary>
     private void CreateNewCustomer()
     {
         editingCustomer = new Customer();
@@ -259,6 +242,10 @@ else
         showModal = true;
     }
 
+    /// <summary>
+    /// Prepares the modal for editing an existing customer.
+    /// </summary>
+    /// <param name="customer">The customer to edit.</param>
     private void EditCustomer(Customer customer)
     {
         editingCustomer = new Customer
@@ -277,6 +264,10 @@ else
         showModal = true;
     }
 
+    /// <summary>
+    /// Handles user input in the address field with debouncing and calls the search service.
+    /// </summary>
+    /// <param name="e">The input event arguments.</param>
     private async Task OnAddressInput(ChangeEventArgs e)
     {
         var val = e.Value?.ToString();
@@ -312,6 +303,10 @@ else
         }
     }
 
+    /// <summary>
+    /// Updates the customer model with details from the selected address suggestion.
+    /// </summary>
+    /// <param name="suggestion">The selected address suggestion.</param>
     private void SelectAddress(OsmSearchResult suggestion)
     {
         // Populate Address
@@ -336,18 +331,26 @@ else
         addressSuggestions.Clear();
     }
 
+    /// <summary>
+    /// Deletes a customer and refreshes the grid.
+    /// </summary>
+    /// <param name="id">The unique identifier of the customer to delete.</param>
     private async Task DeleteCustomer(Guid id)
     {
         await CustomerService.DeleteCustomerAsync(id);
-        await LoadCustomers();
+        if (grid != null) await grid.RefreshDataAsync();
     }
 
+    /// <summary>Closes the customer modal.</summary>
     private void CloseModal() => showModal = false;
 
+    /// <summary>
+    /// Submits the customer form (create or update) and refreshes the grid.
+    /// </summary>
     private async Task HandleSubmit()
     {
         await CustomerService.SaveCustomerAsync(editingCustomer);
         showModal = false;
-        await LoadCustomers();
+        if (grid != null) await grid.RefreshDataAsync();
     }
 }

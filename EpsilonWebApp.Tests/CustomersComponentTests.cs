@@ -15,6 +15,10 @@ namespace EpsilonWebApp.Tests
         {
             // Add basic services needed by the component
             this.AddTestAuthorization().SetAuthorized("testuser");
+            
+            // Configure JSInterop for QuickGrid
+            var module = JSInterop.SetupModule("./_content/Microsoft.AspNetCore.Components.QuickGrid/QuickGrid.razor.js");
+            module.SetupModule("init", _ => true);
         }
 
         [Fact]
@@ -32,8 +36,8 @@ namespace EpsilonWebApp.Tests
             var cut = RenderComponent<Customers>();
 
             // Assert
-            var p = cut.Find("p");
-            Assert.Equal("Φόρτωση...", p.TextContent);
+            var text = cut.Find("p.text-muted").TextContent;
+            Assert.Equal("Φόρτωση δεδομένων...", text);
         }
 
         [Fact]

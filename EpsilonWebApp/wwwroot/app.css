@@ -58,3 +58,40 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+/* QuickGrid Styling */
+.grid-container {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+}
+
+.quickgrid {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+/* QuickGrid Paginator Styling */
+.paginator {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+}
+
+.paginator button {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+}
+
+.paginator button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.paginator .current-page-indicator {
+    font-weight: bold;
+}

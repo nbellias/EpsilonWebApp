@@ -56,9 +56,9 @@
   - **Service Layer**: Introduced `ICustomerService` to encapsulate business logic, keeping controllers thin and focused on HTTP concerns.
   - **Dependency Injection**: Utilized for loose coupling between components.
 - **UI/UX**: 
-  - Developed a responsive Blazor WASM grid with server-side paging and dynamic sorting.
+  - Developed a responsive Blazor WASM interface using the **QuickGrid** component for displaying customer data with server-side paging and dynamic sorting.
   - Integrated **OpenStreetMap Nominatim API** for real-time address autocomplete and auto-population of city, postal code, and country.
-  - Fully translated the UI into Greek.
+  - Fully translated the UI into Greek, including a custom Greek paginator for the QuickGrid.
 - **Security**: Implemented a **Hybrid Authentication** system:
   - **Cookie Authentication**: For the Blazor Web UI (stateful session management).
   - **JWT (JSON Web Token)**: For programmatic API access and external clients (stateless).
