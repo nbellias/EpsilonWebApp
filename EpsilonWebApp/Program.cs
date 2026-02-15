@@ -11,6 +11,9 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 
+/// <summary>
+/// Entry point for the ASP.NET Core API and Blazor Server application.
+/// </summary>
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -92,6 +95,19 @@ builder.Services.AddSwaggerGen(c =>
             Array.Empty<string>()
         }
     });
+
+    // Include XML comments in Swagger
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = System.IO.Path.Combine(AppContext.BaseDirectory, xmlFile);
+    c.IncludeXmlComments(xmlPath);
+
+    // Also include shared models XML
+    var sharedXmlFile = "EpsilonWebApp.Shared.xml";
+    var sharedXmlPath = System.IO.Path.Combine(AppContext.BaseDirectory, sharedXmlFile);
+    if (System.IO.File.Exists(sharedXmlPath))
+    {
+        c.IncludeXmlComments(sharedXmlPath);
+    }
 });
 
 var app = builder.Build();

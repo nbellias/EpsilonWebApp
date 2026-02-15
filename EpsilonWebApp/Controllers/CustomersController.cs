@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EpsilonWebApp.Controllers
 {
+    /// <summary>
+    /// API Controller for managing customer data.
+    /// </summary>
     [Authorize(AuthenticationSchemes = $"{JwtBearerDefaults.AuthenticationScheme},{CookieAuthenticationDefaults.AuthenticationScheme}")]
     [Route("api/[controller]")]
     [ApiController]
@@ -14,12 +17,23 @@ namespace EpsilonWebApp.Controllers
     {
         private readonly ICustomerService _customerService;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CustomersController"/> class.
+        /// </summary>
+        /// <param name="customerService">The customer service.</param>
         public CustomersController(ICustomerService customerService)
         {
             _customerService = customerService;
         }
 
-        // GET: api/Customers
+        /// <summary>
+        /// Retrieves a paginated list of customers.
+        /// </summary>
+        /// <param name="page">The page number to retrieve (default is 1).</param>
+        /// <param name="pageSize">The number of items per page (default is 10).</param>
+        /// <param name="sortBy">The property name to sort by.</param>
+        /// <param name="descending">True to sort in descending order.</param>
+        /// <returns>A paginated result containing the list of customers.</returns>
         [HttpGet]
         public async Task<ActionResult<PagedResult<Customer>>> GetCustomers(
             int page = 1, 
@@ -31,7 +45,11 @@ namespace EpsilonWebApp.Controllers
             return Ok(result);
         }
 
-        // GET: api/Customers/5
+        /// <summary>
+        /// Retrieves a specific customer by their ID.
+        /// </summary>
+        /// <param name="id">The unique identifier of the customer.</param>
+        /// <returns>The requested customer if found; otherwise, NotFound.</returns>
         [HttpGet("{id}")]
         public async Task<ActionResult<Customer>> GetCustomer(Guid id)
         {
@@ -45,7 +63,12 @@ namespace EpsilonWebApp.Controllers
             return Ok(customer);
         }
 
-        // PUT: api/Customers/5
+        /// <summary>
+        /// Updates an existing customer.
+        /// </summary>
+        /// <param name="id">The ID of the customer to update.</param>
+        /// <param name="customer">The updated customer data.</param>
+        /// <returns>NoContent if successful; otherwise, NotFound.</returns>
         [HttpPut("{id}")]
         public async Task<IActionResult> PutCustomer(Guid id, Customer customer)
         {
@@ -58,7 +81,11 @@ namespace EpsilonWebApp.Controllers
             return NoContent();
         }
 
-        // POST: api/Customers
+        /// <summary>
+        /// Creates a new customer.
+        /// </summary>
+        /// <param name="customer">The customer data to create.</param>
+        /// <returns>The created customer with a link to its GET endpoint.</returns>
         [HttpPost]
         public async Task<ActionResult<Customer>> PostCustomer(Customer customer)
         {
@@ -66,7 +93,11 @@ namespace EpsilonWebApp.Controllers
             return CreatedAtAction("GetCustomer", new { id = createdCustomer.Id }, createdCustomer);
         }
 
-        // DELETE: api/Customers/5
+        /// <summary>
+        /// Deletes a specific customer.
+        /// </summary>
+        /// <param name="id">The ID of the customer to delete.</param>
+        /// <returns>NoContent if successful; otherwise, NotFound.</returns>
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCustomer(Guid id)
         {
@@ -79,6 +110,11 @@ namespace EpsilonWebApp.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Proxies an address search request to the OpenStreetMap Nominatim API.
+        /// </summary>
+        /// <param name="query">The address search query.</param>
+        /// <returns>The raw JSON response from OpenStreetMap.</returns>
         [HttpGet("search-address")]
         public async Task<IActionResult> SearchAddress([FromQuery] string query)
         {

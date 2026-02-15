@@ -9,6 +9,9 @@ using Xunit;
 
 namespace EpsilonWebApp.Tests
 {
+    /// <summary>
+    /// Unit tests for the <see cref="CustomersController"/>.
+    /// </summary>
     public class CustomersControllerTests
     {
         private (AppDbContext context, CustomerService service) GetService()
@@ -23,6 +26,9 @@ namespace EpsilonWebApp.Tests
             return (context, service);
         }
 
+        /// <summary>
+        /// Verifies that GetCustomers returns all customers from the database.
+        /// </summary>
         [Fact]
         public async Task GetCustomers_ReturnsAllCustomers()
         {
@@ -43,6 +49,9 @@ namespace EpsilonWebApp.Tests
             Assert.Equal(2, pagedResult!.Items.Count);
         }
 
+        /// <summary>
+        /// Verifies that PostCustomer successfully adds a customer to the database.
+        /// </summary>
         [Fact]
         public async Task PostCustomer_AddsCustomer()
         {

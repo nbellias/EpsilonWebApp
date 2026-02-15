@@ -3,15 +3,23 @@ using EpsilonWebApp.Shared.Models;
 
 namespace EpsilonWebApp.Client.Services
 {
+    /// <summary>
+    /// Implementation of the client-side customer service.
+    /// </summary>
     public class CustomerServiceClient : ICustomerServiceClient
     {
         private readonly HttpClient _http;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CustomerServiceClient"/> class.
+        /// </summary>
+        /// <param name="http">The HTTP client.</param>
         public CustomerServiceClient(HttpClient http)
         {
             _http = http;
         }
 
+        /// <inheritdoc/>
         public async Task<PagedResult<Customer>> GetCustomersAsync(int page = 1, int pageSize = 10, string? sortBy = null, bool descending = false)
         {
             var url = $"api/customers?page={page}&pageSize={pageSize}";
@@ -22,11 +30,13 @@ namespace EpsilonWebApp.Client.Services
             return await _http.GetFromJsonAsync<PagedResult<Customer>>(url) ?? new PagedResult<Customer>();
         }
 
+        /// <inheritdoc/>
         public async Task<Customer?> GetCustomerAsync(Guid id)
         {
             return await _http.GetFromJsonAsync<Customer>($"api/customers/{id}");
         }
 
+        /// <inheritdoc/>
         public async Task SaveCustomerAsync(Customer customer)
         {
             if (customer.Id == Guid.Empty)
@@ -39,11 +49,13 @@ namespace EpsilonWebApp.Client.Services
             }
         }
 
+        /// <inheritdoc/>
         public async Task DeleteCustomerAsync(Guid id)
         {
             await _http.DeleteAsync($"api/customers/{id}");
         }
 
+        /// <inheritdoc/>
         public async Task<List<OsmSearchResult>> SearchAddressAsync(string query)
         {
             if (string.IsNullOrWhiteSpace(query)) return new List<OsmSearchResult>();

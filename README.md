@@ -46,6 +46,9 @@
   - `EpsilonWebApp.Data`: Persistence layer using **Entity Framework Core**, featuring the **Repository** and **Unit of Work** patterns.
   - `EpsilonWebApp`: ASP.NET Core **API Host and Service Proxy**. It handles authentication, API routing, and proxies external service calls (OpenStreetMap), acting as the backend bridge for the Blazor client.
   - `EpsilonWebApp.Client`: Blazor WebAssembly frontend.
+- **Blazor Interactivity**: 
+  - Implemented using **Interactive WebAssembly (WASM)** render mode for the Customer management interface.
+  - **Prerendering was disabled** (`prerender: false`) for the `Customers.razor` page. This ensures that the client-side authentication and API calls (via `CustomerServiceClient`) work correctly from the start without the "flicker" or double-initialization issues often encountered when combining prerendering with client-side API dependencies.
 - **Patterns**:
   - **SOLID Principles**: Applied throughout the codebase to ensure maintainability and testability.
   - **Repository Pattern**: Abstracted data access to keep the domain logic decoupled from EF Core specifics.
@@ -75,6 +78,8 @@
   ```bash
   docker run --name mssql -p 1433:1433 -e ACCEPT_EULA=Y -e MSSQL_SA_PASSWORD=Sp#r0s1994! -e MSSQL_PID=Developer --restart unless-stopped -v D:/Volumes/mssql/data:/var/opt/mssql/data -v D:/Volumes/mssql/log:/var/opt/mssql/log -v D:/Volumes/mssql/shared:/Shared -d mcr.microsoft.com/mssql/server:2022-latest
   ```
+  **Why Docker?**: I intentionally avoided using **SQL Server LocalDB** because it is tightly coupled with Visual Studio. As I prefer using **VS Code** for development, Docker provides a more portable and platform-independent environment. Furthermore, I generally prefer using Docker for infrastructure services—including databases, publish-subscribe brokers (like RabbitMQ or Redis), and monitoring/logging/alerting stacks (like ELK or Prometheus/Grafana)—as it ensures consistency across development, testing, and production environments.
+
   The connection details (Host, Database Name, User, and Password) are managed in `appsettings.json`. Additionally, the following script was used inside **SQL Server Management Studio (SSMS)** to populate the database with 100 sample customer records.
 
   **Note on Seeding**: An external SQL script was chosen over built-in Entity Framework Core seeding (`HasData`) for several reasons:
@@ -100,12 +105,20 @@ classDiagram
     class CustomersController {
         -ICustomerService _customerService
         +GetCustomers(page, pageSize, sortBy, descending)
+        +GetCustomer(id)
         +PostCustomer(customer)
+        +PutCustomer(id, customer)
+        +DeleteCustomer(id)
+        +SearchAddress(query)
     }
     class ICustomerService {
         <<interface>>
         +GetCustomersAsync()
+        +GetCustomerByIdAsync()
         +CreateCustomerAsync()
+        +UpdateCustomerAsync()
+        +DeleteCustomerAsync()
+        +SearchAddressAsync()
     }
     class CustomerService {
         -IUnitOfWork _unitOfWork
@@ -126,8 +139,13 @@ classDiagram
     }
     class IRepository~T~ {
         <<interface>>
-        +AddAsync(T)
         +GetByIdAsync(id)
+        +GetAllAsync()
+        +Find(predicate)
+        +AddAsync(entity)
+        +Update(entity)
+        +Remove(entity)
+        +CountAsync()
     }
 
     CustomersController --> ICustomerService
@@ -186,10 +204,10 @@ sequenceDiagram
     UI->>Client: GetCustomersAsync(page, sort, etc.)
     Client->>API: GET /api/customers
     API->>Service: GetCustomersAsync()
-    Service->>UoW: Customers.GetPagedAsync()
-    UoW->>Repo: GetPagedAsync()
-    Repo-->>UoW: PagedResult<Customer>
-    UoW-->>Service: PagedResult<Customer>
+    Service->>UoW: Customers (Property Access)
+    UoW-->>Service: ICustomerRepository
+    Service->>Repo: GetPagedAsync()
+    Repo-->>Service: PagedResult<Customer>
     Service-->>API: PagedResult<Customer>
     API-->>Client: JSON Result
     Client-->>UI: PagedResult<Customer>
@@ -209,14 +227,36 @@ sequenceDiagram
     UI->>Client: CreateCustomerAsync(customer)
     Client->>API: POST /api/customers
     API->>Service: CreateCustomerAsync(customer)
-    Service->>UoW: Customers.AddAsync(customer)
-    UoW->>Repo: AddAsync(customer)
+    Service->>UoW: Customers (Property Access)
+    UoW-->>Service: ICustomerRepository
+    Service->>Repo: AddAsync(customer)
     Service->>UoW: CompleteAsync()
     UoW-->>Service: Changes Saved
     Service-->>API: Created Customer
     API-->>Client: 201 Created
     Client-->>UI: Customer Object
     UI->>UI: Refresh List / Close Modal
+```
+
+### Sequence Diagram - Address Search (Service Proxy)
+```mermaid
+sequenceDiagram
+    participant UI as Customers.razor
+    participant Client as CustomerServiceClient
+    participant API as CustomersController
+    participant Service as CustomerService
+    participant OSM as OpenStreetMap API
+
+    UI->>UI: User types in Address field
+    UI->>Client: SearchAddressAsync(query)
+    Client->>API: GET /api/customers/search-address
+    API->>Service: SearchAddressAsync(query)
+    Service->>OSM: GET nominatim.openstreetmap.org/search
+    OSM-->>Service: JSON Results
+    Service-->>API: JSON String
+    API-->>Client: JSON Response
+    Client-->>UI: List<OsmSearchResult>
+    UI->>UI: Display Dropdown
 ```
 
 ### Part 2 - SOLID Principles

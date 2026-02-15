@@ -4,27 +4,38 @@ using EpsilonWebApp.Shared.Models;
 
 namespace EpsilonWebApp.Services
 {
+    /// <summary>
+    /// Service for managing customer business logic.
+    /// </summary>
     public class CustomerService : ICustomerService
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IHttpClientFactory _httpClientFactory;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CustomerService"/> class.
+        /// </summary>
+        /// <param name="unitOfWork">The unit of work.</param>
+        /// <param name="httpClientFactory">The HTTP client factory.</param>
         public CustomerService(IUnitOfWork unitOfWork, IHttpClientFactory httpClientFactory)
         {
             _unitOfWork = unitOfWork;
             _httpClientFactory = httpClientFactory;
         }
 
+        /// <inheritdoc/>
         public async Task<PagedResult<Customer>> GetCustomersAsync(int page, int pageSize, string? sortBy, bool descending)
         {
             return await _unitOfWork.Customers.GetPagedAsync(page, pageSize, sortBy, descending);
         }
 
+        /// <inheritdoc/>
         public async Task<Customer?> GetCustomerByIdAsync(Guid id)
         {
             return await _unitOfWork.Customers.GetByIdAsync(id);
         }
 
+        /// <inheritdoc/>
         public async Task<Customer> CreateCustomerAsync(Customer customer)
         {
             if (customer.Id == Guid.Empty)
@@ -37,6 +48,7 @@ namespace EpsilonWebApp.Services
             return customer;
         }
 
+        /// <inheritdoc/>
         public async Task<bool> UpdateCustomerAsync(Guid id, Customer customer)
         {
             if (id != customer.Id) return false;
@@ -49,6 +61,7 @@ namespace EpsilonWebApp.Services
             return true;
         }
 
+        /// <inheritdoc/>
         public async Task<bool> DeleteCustomerAsync(Guid id)
         {
             var customer = await _unitOfWork.Customers.GetByIdAsync(id);
@@ -59,6 +72,7 @@ namespace EpsilonWebApp.Services
             return true;
         }
 
+        /// <inheritdoc/>
         public async Task<string> SearchAddressAsync(string query)
         {
             if (string.IsNullOrWhiteSpace(query))

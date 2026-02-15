@@ -4,12 +4,20 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EpsilonWebApp.Data.Repositories
 {
+    /// <summary>
+    /// Implementation of the customer repository.
+    /// </summary>
     public class CustomerRepository : Repository<Customer>, ICustomerRepository
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CustomerRepository"/> class.
+        /// </summary>
+        /// <param name="context">The database context.</param>
         public CustomerRepository(AppDbContext context) : base(context)
         {
         }
 
+        /// <inheritdoc/>
         public async Task<PagedResult<Customer>> GetPagedAsync(int page, int pageSize, string? sortBy, bool descending)
         {
             IQueryable<Customer> query = Context.Set<Customer>();
