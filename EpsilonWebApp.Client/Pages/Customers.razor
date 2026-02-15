@@ -1,0 +1,353 @@
+@page "/customers"
+@using EpsilonWebApp.Client.Services
+@using EpsilonWebApp.Shared.Models
+@inject CustomerServiceClient CustomerService
+@attribute [Authorize]
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+<PageTitle>Πελάτες</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Πελάτες</h1>
+    <button class="btn btn-primary" @onclick="CreateNewCustomer" title="Νέος Πελάτης">
+        <i class="bi bi-plus-lg"></i>
+    </button>
+</div>
+
+@if (customers == null)
+{
+    <p><em>Φόρτωση...</em></p>
+}
+else
+{
+    <div class="mb-2 text-muted">
+        Συνολικός αριθμός πελατών: <strong>@totalCount</strong>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-secondary">
+                <tr>
+                    <th @onclick='() => Sort("companyname")' style="cursor: pointer;">
+                        Επωνυμία Εταιρείας @GetSortIcon("companyname")
+                    </th>
+                    <th @onclick='() => Sort("contactname")' style="cursor: pointer;">
+                        Όνομα Επαφής @GetSortIcon("contactname")
+                    </th>
+                    <th @onclick='() => Sort("city")' style="cursor: pointer;">
+                        Πόλη @GetSortIcon("city")
+                    </th>
+                    <th @onclick='() => Sort("country")' style="cursor: pointer;">
+                        Χώρα @GetSortIcon("country")
+                    </th>
+                    <th @onclick='() => Sort("phone")' style="cursor: pointer;">
+                        Τηλέφωνο @GetSortIcon("phone")
+                    </th>
+                    <th class="text-center"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var customer in customers)
+                {
+                    <tr>
+                        <td>@customer.CompanyName</td>
+                        <td>@customer.ContactName</td>
+                        <td>@customer.City</td>
+                        <td>@customer.Country</td>
+                        <td>@customer.Phone</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm text-primary p-0 me-3 border-0 bg-transparent" @onclick="() => EditCustomer(customer)" title="Επεξεργασία">
+                                <i class="bi bi-pencil-square" style="font-size: 1.2rem;"></i>
+                            </button>
+                            <button class="btn btn-sm text-danger p-0 border-0 bg-transparent" @onclick="() => DeleteCustomer(customer.Id)" title="Διαγραφή">
+                                <i class="bi bi-trash3" style="font-size: 1.2rem;"></i>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="d-flex justify-content-center mt-3">
+        <nav aria-label="Page navigation">
+            <ul class="pagination">
+                <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                    <button class="page-link" @onclick="() => ChangePage(1)" title="Πρώτη Σελίδα">
+                        <i class="bi bi-chevron-double-left"></i>
+                    </button>
+                </li>
+                <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                    <button class="page-link" @onclick="() => ChangePage(currentPage - 1)" title="Προηγούμενο">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                </li>
+                <li class="page-item active">
+                    <span class="page-link">Σελίδα @currentPage από @totalPages</span>
+                </li>
+                <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                    <button class="page-link" @onclick="() => ChangePage(currentPage + 1)" title="Επόμενο">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </li>
+                <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                    <button class="page-link" @onclick="() => ChangePage(totalPages)" title="Τελευταία Σελίδα">
+                        <i class="bi bi-chevron-double-right"></i>
+                    </button>
+                </li>
+            </ul>
+        </nav>
+    </div>
+}
+
+@if (showModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(editingCustomer.Id == Guid.Empty ? "Νέος Πελάτης" : "Επεξεργασία Πελάτη")</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="editingCustomer" OnValidSubmit="HandleSubmit">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        <div class="mb-3">
+                            <label class="form-label">Επωνυμία Εταιρείας</label>
+                            <InputText class="form-control" @bind-Value="editingCustomer.CompanyName" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Όνομα Επαφής</label>
+                            <InputText class="form-control" @bind-Value="editingCustomer.ContactName" />
+                        </div>
+                        <div class="mb-3 position-relative">
+                            <label class="form-label">Διεύθυνση</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" 
+                                       value="@editingCustomer.Address" 
+                                       @oninput="OnAddressInput" 
+                                       placeholder="Ξεκινήστε να πληκτρολογείτε τη διεύθυνση..." />
+                                @if (isSearchingAddress)
+                                {
+                                    <span class="input-group-text">
+                                        <span class="spinner-border spinner-border-sm" role="status"></span>
+                                    </span>
+                                }
+                            </div>
+                            
+                            @if (addressSuggestions.Any())
+                            {
+                                <div class="list-group position-absolute w-100 shadow-sm" style="z-index: 1050; max-height: 200px; overflow-y: auto;">
+                                    @foreach (var suggestion in addressSuggestions)
+                                    {
+                                        <button type="button" class="list-group-item list-group-item-action text-start" 
+                                                @onclick="() => SelectAddress(suggestion)">
+                                            <small>@suggestion.Display_Name</small>
+                                        </button>
+                                    }
+                                </div>
+                            }
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Πόλη</label>
+                                <InputText class="form-control" @bind-Value="editingCustomer.City" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Περιοχή</label>
+                                <InputText class="form-control" @bind-Value="editingCustomer.Region" />
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Ταχυδρομικός Κώδικας</label>
+                                <InputText class="form-control" @bind-Value="editingCustomer.PostalCode" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Χώρα</label>
+                                <InputText class="form-control" @bind-Value="editingCustomer.Country" />
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Τηλέφωνο</label>
+                            <InputText class="form-control" @bind-Value="editingCustomer.Phone" />
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseModal">Ακύρωση</button>
+                            <button type="submit" class="btn btn-primary">Αποθήκευση</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Customer>? customers;
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalPages = 1;
+    private int totalCount = 0;
+    private string currentSortBy = "companyname";
+    private bool isDescending = false;
+    private bool showModal = false;
+    private bool isSearchingAddress = false;
+    private List<OsmSearchResult> addressSuggestions = new();
+    private System.Threading.CancellationTokenSource? debounceCts;
+    private Customer editingCustomer = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCustomers();
+    }
+
+    private async Task LoadCustomers()
+    {
+        var result = await CustomerService.GetCustomersAsync(currentPage, pageSize, currentSortBy, isDescending);
+        customers = result.Items;
+        totalPages = result.TotalPages;
+        totalCount = result.TotalCount;
+        if (currentPage > totalPages && totalPages > 0)
+        {
+            currentPage = totalPages;
+            await LoadCustomers();
+        }
+    }
+
+    private async Task ChangePage(int newPage)
+    {
+        currentPage = newPage;
+        await LoadCustomers();
+    }
+
+    private async Task Sort(string column)
+    {
+        if (currentSortBy == column)
+        {
+            isDescending = !isDescending;
+        }
+        else
+        {
+            currentSortBy = column;
+            isDescending = false;
+        }
+        await LoadCustomers();
+    }
+
+    private RenderFragment GetSortIcon(string column) => builder =>
+    {
+        if (currentSortBy != column)
+        {
+            builder.OpenElement(0, "i");
+            builder.AddAttribute(1, "class", "bi bi-arrow-down-up ms-1 text-muted opacity-50");
+            builder.CloseElement();
+            return;
+        }
+
+        builder.OpenElement(0, "i");
+        builder.AddAttribute(1, "class", isDescending ? "bi bi-sort-down ms-1 text-primary" : "bi bi-sort-up ms-1 text-primary");
+        builder.CloseElement();
+    };
+
+    private void CreateNewCustomer()
+    {
+        editingCustomer = new Customer();
+        addressSuggestions.Clear();
+        showModal = true;
+    }
+
+    private void EditCustomer(Customer customer)
+    {
+        editingCustomer = new Customer
+        {
+            Id = customer.Id,
+            CompanyName = customer.CompanyName,
+            ContactName = customer.ContactName,
+            Address = customer.Address,
+            City = customer.City,
+            Region = customer.Region,
+            PostalCode = customer.PostalCode,
+            Country = customer.Country,
+            Phone = customer.Phone
+        };
+        addressSuggestions.Clear();
+        showModal = true;
+    }
+
+    private async Task OnAddressInput(ChangeEventArgs e)
+    {
+        var val = e.Value?.ToString();
+        editingCustomer.Address = val;
+
+        if (string.IsNullOrWhiteSpace(val) || val.Length < 3)
+        {
+            addressSuggestions.Clear();
+            return;
+        }
+
+        // Debounce logic
+        debounceCts?.Cancel();
+        debounceCts = new System.Threading.CancellationTokenSource();
+        var token = debounceCts.Token;
+
+        try
+        {
+            await Task.Delay(500, token); // Wait for 500ms
+            isSearchingAddress = true;
+            StateHasChanged();
+
+            addressSuggestions = await CustomerService.SearchAddressAsync(val);
+        }
+        catch (TaskCanceledException)
+        {
+            // Ignore
+        }
+        finally
+        {
+            isSearchingAddress = false;
+            StateHasChanged();
+        }
+    }
+
+    private void SelectAddress(OsmSearchResult suggestion)
+    {
+        // Populate Address
+        var addr = suggestion.Address;
+        var street = !string.IsNullOrEmpty(addr.Road) ? addr.Road : "";
+        var number = !string.IsNullOrEmpty(addr.House_Number) ? $" {addr.House_Number}" : "";
+        
+        editingCustomer.Address = $"{street}{number}".Trim();
+        
+        // Populate City (OSM uses road/town/village/city)
+        editingCustomer.City = addr.City ?? addr.Town ?? addr.Village ?? addr.Suburb ?? "";
+        
+        // Populate Region/State
+        editingCustomer.Region = addr.State ?? "";
+        
+        // Populate Zip
+        editingCustomer.PostalCode = addr.Postcode ?? "";
+        
+        // Populate Country
+        editingCustomer.Country = addr.Country ?? "";
+
+        addressSuggestions.Clear();
+    }
+
+    private async Task DeleteCustomer(Guid id)
+    {
+        await CustomerService.DeleteCustomerAsync(id);
+        await LoadCustomers();
+    }
+
+    private void CloseModal() => showModal = false;
+
+    private async Task HandleSubmit()
+    {
+        await CustomerService.SaveCustomerAsync(editingCustomer);
+        showModal = false;
+        await LoadCustomers();
+    }
+}

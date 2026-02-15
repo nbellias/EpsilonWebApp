@@ -1,7 +1,58 @@
-﻿@page "/"
+@page "/"
+@using EpsilonWebApp.Shared.Models
+@using EpsilonWebApp.Shared.Utils
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Αρχική</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="container mt-4">
+    <div class="jumbotron bg-light p-5 rounded-lg m-3">
+        <h1 class="display-4">Καλώς ήρθατε!</h1>
+        <p class="lead">Αυτή είναι μια εφαρμογή διαχείρισης πελατών που αναπτύχθηκε για το Challenge project.</p>
+        <hr class="my-4">
+        <p>Χρησιμοποιήστε το μενού στα αριστερά για να περιηγηθείτε στους πελάτες.</p>
+    </div>
 
-Welcome to your new app.
+    <div class="card m-3">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0">Επίδειξη Task 2 (Employee/Manager Printer)</h5>
+        </div>
+        <div class="card-body">
+            <p>Αυτή η ενότητα επιδεικνύει τη μέθοδο που δέχεται είτε Employee είτε Manager και εκτυπώνει το όνομά τους.</p>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="alert alert-info">
+                        <strong>Employee:</strong> @employeeName
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="alert alert-success">
+                        <strong>Manager:</strong> @managerName
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string employeeName = "";
+    private string managerName = "";
+
+    protected override void OnInitialized()
+    {
+        var printer = new PersonNamePrinter();
+
+        // Create instances
+        var emp = new Employee { Name = "Νίκος Παπαδόπουλος (Employee)" };
+        var mgr = new Manager { Name = "Μαρία Γεωργίου (Manager)" };
+
+        // Demonstrate printing to console (as requested in README)
+        printer.PrintName(emp);
+        printer.PrintName(mgr);
+
+        // Capture for UI display
+        employeeName = printer.GetName(emp);
+        managerName = printer.GetName(mgr);
+    }
+}

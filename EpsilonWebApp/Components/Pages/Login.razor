@@ -1,0 +1,66 @@
+@page "/login"
+@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager NavigationManager
+
+<PageTitle>Είσοδος</PageTitle>
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="card-title mb-0">Είσοδος</h3>
+            </div>
+            <div class="card-body">
+                <form action="@(GetLoginAction())" method="post">
+                    <AntiforgeryToken />
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Όνομα Χρήστη</label>
+                        <input type="text" class="form-control" id="username" name="username" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Συνθηματικό</label>
+                        <input type="password" class="form-control" id="password" name="password" required />
+                    </div>
+                    @if (NavigationManager.Uri.Contains("error=invalid"))
+                    {
+                        <div class="alert alert-danger">Μη έγκυρο όνομα χρήστη ή συνθηματικό.</div>
+                    }
+                    <button type="submit" class="btn btn-primary w-100">Είσοδος</button>
+                </form>
+            </div>
+            <div class="card-footer text-muted text-center">
+                Χρησιμοποιήστε <b>admin</b> / <b>password123</b>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthState { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthState != null)
+        {
+            var authState = await AuthState;
+            if (authState.User.Identity?.IsAuthenticated ?? false)
+            {
+                NavigationManager.NavigateTo(ReturnUrl ?? "/customers");
+            }
+        }
+    }
+
+    private string GetLoginAction()
+    {
+        var action = "api/auth/login-cookie";
+        if (!string.IsNullOrEmpty(ReturnUrl))
+        {
+            action += $"?returnUrl={Uri.EscapeDataString(ReturnUrl)}";
+        }
+        return action;
+    }
+}
