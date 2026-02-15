@@ -1,9 +1,7 @@
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using EpsilonWebApp.Client.Services;
 
-/// <summary>
-/// Entry point for the Blazor WebAssembly client application.
-/// </summary>
+// Entry point for the Blazor WebAssembly client application.
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });

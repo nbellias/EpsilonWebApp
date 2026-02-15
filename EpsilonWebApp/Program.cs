@@ -11,9 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 
-/// <summary>
-/// Entry point for the ASP.NET Core API and Blazor Server application.
-/// </summary>
+// Entry point for the ASP.NET Core API and Blazor Server application.
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
