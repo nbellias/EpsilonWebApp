@@ -55,6 +55,12 @@
   - **Unit of Work**: Managed transactions and repository orchestration.
   - **Service Layer**: Introduced `ICustomerService` to encapsulate business logic, keeping controllers thin and focused on HTTP concerns.
   - **Dependency Injection**: Utilized for loose coupling between components.
+- **Scalability (Millions of Customers/Users)**: 
+    - The solution is designed to handle large-scale data sets by utilizing **Database Indexing** on all frequently sorted and searched columns (CompanyName, ContactName, City, etc.) in `AppDbContext`.
+    - **Read-Only Optimizations**: The `CustomerRepository` uses `.AsNoTracking()` for all fetch operations to minimize memory overhead and improve performance when reading millions of records.
+    - **Pagination**: Implemented server-side pagination to ensure that only small, manageable chunks of data are ever loaded into memory or transmitted over the network.
+    - **Architectural Readiness**: While advanced optimizations like Redis caching, rate limiting, and keyset pagination were considered, they were intentionally omitted to maintain a clean, readable codebase appropriate for the challenge scope, while ensuring the fundamental database-level performance foundations are in place.
+    - **Scalability Testing**: Added a dedicated test suite (`ScalabilityPerformanceTests.cs`) that verifies pagination logic with large volumes, ensures sorting correctness across indexed columns, and validates the use of `AsNoTracking()` to reduce memory footprint.
 - **UI/UX**: 
   - Developed a responsive Blazor WASM interface using the **QuickGrid** component for displaying customer data with server-side paging and dynamic sorting.
   - Integrated **OpenStreetMap Nominatim API** for real-time address autocomplete and auto-population of city, postal code, and country.

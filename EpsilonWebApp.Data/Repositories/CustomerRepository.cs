@@ -22,7 +22,7 @@ namespace EpsilonWebApp.Data.Repositories
         {
             IQueryable<Customer> query = Context.Set<Customer>();
 
-            // Apply sorting
+            // Apply sorting - Note: With millions of records, indexes on these columns are critical!
             if (!string.IsNullOrEmpty(sortBy))
             {
                 query = sortBy.ToLower() switch
@@ -41,9 +41,13 @@ namespace EpsilonWebApp.Data.Repositories
             }
 
             var totalCount = await query.CountAsync();
+
+            // Note: For extremely large offsets (deep paging), Skip/Take becomes slow.
+            // Consider keyset pagination (e.g. .Where(c => c.Id > lastId)) for better scale.
             var items = await query
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .AsNoTracking() // Optimization: Read-only query
                 .ToListAsync();
 
             return new PagedResult<Customer>

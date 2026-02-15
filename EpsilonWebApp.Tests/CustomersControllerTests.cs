@@ -20,6 +20,7 @@ namespace EpsilonWebApp.Tests
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
             var context = new AppDbContext(options);
+            
             var unitOfWork = new UnitOfWork(context);
             var mockHttpClientFactory = new Mock<IHttpClientFactory>();
             var service = new CustomerService(unitOfWork, mockHttpClientFactory.Object);

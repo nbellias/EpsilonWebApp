@@ -25,6 +25,14 @@ namespace EpsilonWebApp.Data
             base.OnModelCreating(modelBuilder);
             
             modelBuilder.Entity<Customer>().HasKey(c => c.Id);
+
+            // Optimization for millions of customers: 
+            // Add indexes to frequently sorted and searched columns.
+            modelBuilder.Entity<Customer>().HasIndex(c => c.CompanyName);
+            modelBuilder.Entity<Customer>().HasIndex(c => c.ContactName);
+            modelBuilder.Entity<Customer>().HasIndex(c => c.City);
+            modelBuilder.Entity<Customer>().HasIndex(c => c.Country);
+            modelBuilder.Entity<Customer>().HasIndex(c => c.Phone);
         }
     }
 }
