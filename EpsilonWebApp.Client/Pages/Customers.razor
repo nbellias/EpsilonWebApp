@@ -59,16 +59,16 @@
                 </li>
                 <li class="page-item active">
                     <span class="page-link">
-                        Σελίδα @(pagination.CurrentPageIndex + 1) από @(pagination.TotalItemCount.HasValue ? (int)Math.Ceiling((double)pagination.TotalItemCount.Value / pagination.ItemsPerPage) : 1)
+                        Σελίδα @(pagination.CurrentPageIndex + 1) από @(totalCount > 0 ? (int)Math.Ceiling((double)totalCount / pagination.ItemsPerPage) : 1)
                     </span>
                 </li>
-                <li class="page-item @(pagination.CurrentPageIndex >= (pagination.TotalItemCount.HasValue ? (int)Math.Ceiling((double)pagination.TotalItemCount.Value / pagination.ItemsPerPage) - 1 : 0) ? "disabled" : "")">
+                <li class="page-item @(pagination.CurrentPageIndex >= (totalCount > 0 ? (int)Math.Ceiling((double)totalCount / pagination.ItemsPerPage) - 1 : 0) ? "disabled" : "")">
                     <button class="page-link" @onclick="() => pagination.SetCurrentPageIndexAsync(pagination.CurrentPageIndex + 1)" title="Επόμενο">
                         <i class="bi bi-chevron-right"></i>
                     </button>
                 </li>
-                <li class="page-item @(pagination.CurrentPageIndex >= (pagination.TotalItemCount.HasValue ? (int)Math.Ceiling((double)pagination.TotalItemCount.Value / pagination.ItemsPerPage) - 1 : 0) ? "disabled" : "")">
-                    <button class="page-link" @onclick="() => pagination.SetCurrentPageIndexAsync((pagination.TotalItemCount.HasValue ? (int)Math.Ceiling((double)pagination.TotalItemCount.Value / pagination.ItemsPerPage) - 1 : 0))" title="Τελευταία Σελίδα">
+                <li class="page-item @(pagination.CurrentPageIndex >= (totalCount > 0 ? (int)Math.Ceiling((double)totalCount / pagination.ItemsPerPage) - 1 : 0) ? "disabled" : "")">
+                    <button class="page-link" @onclick="() => pagination.SetCurrentPageIndexAsync((totalCount > 0 ? (int)Math.Ceiling((double)totalCount / pagination.ItemsPerPage) - 1 : 0))" title="Τελευταία Σελίδα">
                         <i class="bi bi-chevron-double-right"></i>
                     </button>
                 </li>
