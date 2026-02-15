@@ -3,7 +3,7 @@ using EpsilonWebApp.Shared.Models;
 
 namespace EpsilonWebApp.Client.Services
 {
-    public class CustomerServiceClient
+    public class CustomerServiceClient : ICustomerServiceClient
     {
         private readonly HttpClient _http;
 

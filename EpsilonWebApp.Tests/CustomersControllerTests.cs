@@ -4,6 +4,7 @@ using EpsilonWebApp.Services;
 using EpsilonWebApp.Shared.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using Xunit;
 
 namespace EpsilonWebApp.Tests
@@ -17,7 +18,8 @@ namespace EpsilonWebApp.Tests
                 .Options;
             var context = new AppDbContext(options);
             var unitOfWork = new UnitOfWork(context);
-            var service = new CustomerService(unitOfWork);
+            var mockHttpClientFactory = new Mock<IHttpClientFactory>();
+            var service = new CustomerService(unitOfWork, mockHttpClientFactory.Object);
             return (context, service);
         }
 

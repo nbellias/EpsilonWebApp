@@ -7,10 +7,12 @@ namespace EpsilonWebApp.Services
     public class CustomerService : ICustomerService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public CustomerService(IUnitOfWork unitOfWork)
+        public CustomerService(IUnitOfWork unitOfWork, IHttpClientFactory httpClientFactory)
         {
             _unitOfWork = unitOfWork;
+            _httpClientFactory = httpClientFactory;
         }
 
         public async Task<PagedResult<Customer>> GetCustomersAsync(int page, int pageSize, string? sortBy, bool descending)
@@ -62,7 +64,7 @@ namespace EpsilonWebApp.Services
             if (string.IsNullOrWhiteSpace(query))
                 return string.Empty;
 
-            using var client = new HttpClient();
+            var client = _httpClientFactory.CreateClient("Nominatim");
             client.DefaultRequestHeaders.Add("User-Agent", "EpsilonWebApp-Challenge");
 
             var url = $"https://nominatim.openstreetmap.org/search?q={Uri.EscapeDataString(query)}&format=json&addressdetails=1&limit=5";

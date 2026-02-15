@@ -3,6 +3,7 @@ using EpsilonWebApp.Data;
 using EpsilonWebApp.Data.Interfaces;
 using EpsilonWebApp.Interfaces;
 using EpsilonWebApp.Services;
+using EpsilonWebApp.Client.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +25,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddHttpClient();
 
 // JWT & Cookie Authentication Configuration
 var jwtSettings = builder.Configuration.GetSection("Jwt");
@@ -60,7 +62,7 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5234") });
-builder.Services.AddScoped<EpsilonWebApp.Client.Services.CustomerServiceClient>();
+builder.Services.AddScoped<ICustomerServiceClient, CustomerServiceClient>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

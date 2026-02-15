@@ -1,7 +1,7 @@
 @page "/customers"
 @using EpsilonWebApp.Client.Services
 @using EpsilonWebApp.Shared.Models
-@inject CustomerServiceClient CustomerService
+@inject ICustomerServiceClient CustomerService
 @attribute [Authorize]
 @rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 
