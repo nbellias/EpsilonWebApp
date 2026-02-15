@@ -41,29 +41,56 @@
 ## Solution Description
 
 ### Part 1: Customer Management System
-- **Architecture**: Implemented using a Clean Architecture approach with a multi-project solution structure:
-  - `EpsilonWebApp.Shared`: Shared models and interfaces.
-  - `EpsilonWebApp.Data`: Entity Framework Core implementation, Repositories, and Unit of Work.
-  - `EpsilonWebApp`: ASP.NET Core API host and Blazor Server-side components.
-  - `EpsilonWebApp.Client`: Blazor WebAssembly client.
-- **Patterns**: Followed SOLID principles, utilizing the **Repository** and **Unit of Work** patterns to decouple business logic from data access.
+- **Architecture**: Implemented using a **Clean Architecture** approach with a multi-project solution structure:
+  - `EpsilonWebApp.Shared`: Shared models, DTOs, and common interfaces.
+  - `EpsilonWebApp.Data`: Persistence layer using **Entity Framework Core**, featuring the **Repository** and **Unit of Work** patterns.
+  - `EpsilonWebApp`: ASP.NET Core **API Host and Service Proxy**. It handles authentication, API routing, and proxies external service calls (OpenStreetMap), acting as the backend bridge for the Blazor client.
+  - `EpsilonWebApp.Client`: Blazor WebAssembly frontend.
+- **Patterns**:
+  - **SOLID Principles**: Applied throughout the codebase to ensure maintainability and testability.
+  - **Repository Pattern**: Abstracted data access to keep the domain logic decoupled from EF Core specifics.
+  - **Unit of Work**: Managed transactions and repository orchestration.
+  - **Service Layer**: Introduced `ICustomerService` to encapsulate business logic, keeping controllers thin and focused on HTTP concerns.
+  - **Dependency Injection**: Utilized for loose coupling between components.
 - **UI/UX**: 
   - Developed a responsive Blazor WASM grid with server-side paging and dynamic sorting.
   - Integrated **OpenStreetMap Nominatim API** for real-time address autocomplete and auto-population of city, postal code, and country.
   - Fully translated the UI into Greek.
-- **Security**: Implemented a hybrid authentication system using **JWT** for API protection and **Cookie Authentication** for the Blazor UI.
+- **Security**: Implemented a **Hybrid Authentication** system:
+  - **Cookie Authentication**: For the Blazor Web UI (stateful session management).
+  - **JWT (JSON Web Token)**: For programmatic API access and external clients (stateless).
 - **Database**: Configured for **SQL Server** with automated migrations.
-- **Testing**: Included **xUnit** tests for the API controllers and services.
+- **Testing**:
+  - **Unit Testing**: Implemented using **xUnit** and **Moq** for service and logic isolation.
+  - **Component Testing**: Leveraged **bUnit** for testing Blazor components, ensuring correct UI rendering and event handling.
+  - **Integration & E2E Testing**: Used **Microsoft Playwright** (with **NUnit**) for full end-to-end user flow verification, including login, CRUD operations, and address autocomplete validation.
+  - **Data Layer Testing**: Utilized **Microsoft.EntityFrameworkCore.InMemory** for testing repository logic and controller interactions without a physical SQL Server requirement.
 
 ### Part 2: SOLID Principles Implementation
 - Refactored `Employee` and `Manager` classes to implement a common `INamedPerson` interface, adhering to the **Liskov Substitution Principle**.
 - Developed `PersonNamePrinter` which depends on the interface (**Dependency Inversion Principle**), allowing it to handle any future "named person" types without modification (**Open/Closed Principle**).
 
 ## Assumptions
-- **Database**: The solution assumes a local SQL Server instance is running and accessible with the credentials provided in `appsettings.json` (`User Id=sa;Password=Sp#r0s1994!`).
+- **Database**: The solution assumes a local SQL Server instance is running. The implementation was developed and tested using a **MSSQL Docker container** with the following configuration:
+  ```bash
+  docker run --name mssql -p 1433:1433 -e ACCEPT_EULA=Y -e MSSQL_SA_PASSWORD=Sp#r0s1994! -e MSSQL_PID=Developer --restart unless-stopped -v D:/Volumes/mssql/data:/var/opt/mssql/data -v D:/Volumes/mssql/log:/var/opt/mssql/log -v D:/Volumes/mssql/shared:/Shared -d mcr.microsoft.com/mssql/server:2022-latest
+  ```
+  The connection details (Host, Database Name, User, and Password) are managed in `appsettings.json`. Additionally, the following script was used inside **SQL Server Management Studio (SSMS)** to populate the database with 100 sample customer records.
+
+  **Note on Seeding**: An external SQL script was chosen over built-in Entity Framework Core seeding (`HasData`) for several reasons:
+  - **Migration Hygiene**: Built-in seeding bloats migration files with large amounts of static data, making them harder to review and manage.
+  - **Efficiency**: The SQL script utilizes Common Table Expressions (CTEs) and built-in SQL functions (`NEWID()`, `CHOOSE`, `MAXRECURSION`) to generate 100 unique, high-quality sample records (with mixed Greek and International data) much more efficiently than procedural C# code.
+  - **Flexibility**: A script allows for a clean "TRUNCATE and Repopulate" workflow during development and testing without requiring application restarts or migration changes.
+
+  The complete SQL population script can be found in [SQLSCRIPT.md](./SQLSCRIPT.md).
 - **Authentication**: For the purpose of this challenge, the `AuthController` uses a simplified login check. In a production environment, this would be integrated with ASP.NET Core Identity or an external provider.
 - **Internet Connectivity**: Real-time address validation requires an active internet connection to reach the OpenStreetMap Nominatim API.
 - **Environment**: The application is configured to run on `http://localhost:5234` by default.
+- **Microservices Approach**: A microservices architecture was intentionally avoided in favor of a **Modular Monolith** with a Clean Architecture structure. This decision was made because:
+  - **Complexity**: Microservices introduce significant overhead in terms of deployment, inter-service communication, and distributed tracing that is not justified by the current project scope.
+  - **Performance**: In-memory function calls within a single process are faster and simpler than network calls (REST/gRPC) between distributed services.
+  - **Maintainability**: The current multi-project structure provides sufficient separation of concerns (Shared, Data, API, Client) while keeping the codebase easy to manage for a small team.
+  - **Cost**: A monolithic deployment is more cost-effective and easier to orchestrate than a cluster of independent containers.
 
 ## Diagrams
 
